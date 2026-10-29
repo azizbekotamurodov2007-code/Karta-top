@@ -60,43 +60,74 @@
             flex-grow: 1;
             position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 15px;
         }
         .deck-zone {
-            position: absolute;
-            left: 12px;
-            display: flex;
-            align-items: center;
-        }
-        .trump-card {
-            width: 46px;
-            height: 68px;
-            background: #fff;
-            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 5px;
+        }
+        .trump-card {
+            width: 48px;
+            height: 72px;
+            background: #ffffff;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px;
             font-size: 16px;
             font-weight: bold;
-            color: #000;
-            transform: rotate(-90deg);
-            margin-right: -24px;
+            color: #111;
             box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            border: 2px dashed #ffb703;
+            position: relative;
+        }
+        .trump-card.red {
+            color: #d90429;
+        }
+        .trump-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffb703;
+            color: #000;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .deck-cover {
-            width: 46px;
-            height: 68px;
+            width: 48px;
+            height: 72px;
             background: #1d3557;
             border: 2px solid #fff;
-            border-radius: 5px;
+            border-radius: 6px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-            z-index: 2;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+        }
+        .deck-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            margin-top: 2px;
         }
 
         /* Stoldagi kartalar guruhi */
@@ -280,11 +311,20 @@
     <!-- Navbat statusi -->
     <div class="turn-status" id="turnStatusText">O‘yinchilar yig‘ilmoqda...</div>
 
-    <!-- Stol maydoni -->
+    <!-- Stol maydoni (Kozir va koloda yonma-yon) -->
     <div class="table-area">
         <div class="deck-zone">
-            <div id="trumpCardEl" class="trump-card">♠</div>
-            <div id="deckCountEl" class="deck-cover">28</div>
+            <!-- Koloda -->
+            <div class="deck-cover">
+                <span id="deckCountEl">28</span>
+                <span class="deck-label">Karta</span>
+            </div>
+            <!-- Ajratilgan Kozir -->
+            <div id="trumpCardEl" class="trump-card">
+                <div class="trump-badge">Kozir</div>
+                <span id="trumpRank" style="align-self: flex-start;">♠</span>
+                <span id="trumpSuit" style="align-self: flex-end;">♠</span>
+            </div>
         </div>
         <div class="tricks-board" id="trickBoard"></div>
     </div>
@@ -387,11 +427,17 @@
                 document.getElementById("guess-modal").style.display = "none";
             }
 
-            // Kozir va koloda
+            // Kozir va koloda yangilanishi (Alohida, yaqqol, dasht hoshiyali)
             if (state.trump) {
                 const trEl = document.getElementById("trumpCardEl");
-                trEl.innerText = `${state.trump.suit} ${state.trump.rank}`;
-                trEl.className = `trump-card ${isRed(state.trump.suit) ? 'red' : ''}`;
+                document.getElementById("trumpRank").innerText = state.trump.rank;
+                document.getElementById("trumpSuit").innerText = state.trump.suit;
+                
+                if (isRed(state.trump.suit)) {
+                    trEl.className = "trump-card red";
+                } else {
+                    trEl.className = "trump-card";
+                }
             }
             document.getElementById("deckCountEl").innerText = state.deckCount;
 

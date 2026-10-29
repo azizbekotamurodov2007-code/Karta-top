@@ -8,28 +8,32 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// BOT TOKENINGIZNI SHU YERGA QO'YING:
 const BOT_TOKEN = '9127884649:AAHxKujgBNWpEPMqJzsksXQ4_z1Ruq1puA';
+const APP_URL = 'https://karta-top.onrender.com';
+
 const bot = new Telegraf(BOT_TOKEN);
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Telegram Bot /start buyrug'i
 bot.start((ctx) => {
-    ctx.reply("Assalomu alaykum! Kozel o'yiniga xush kelibsiz!", {
+    ctx.reply("🃏 Kozel (120 ochko) o‘yiniga xush kelibsiz!", {
         reply_markup: {
             inline_keyboard: [
-                [{ text: "🎮 O'yinni boshlash", web_app: { url: "https://SIZNING_SAYTINGIZ.onrender.com" } }]
+                [{ text: "🎮 O‘yinni boshlash", web_app: { url: APP_URL } }]
             ]
         }
     });
 });
-bot.launch();
 
-// 36 talik Bura/Kozel kolodasi (Jami 120 ochko)
+bot.launch().catch(err => {
+    console.log("Bot launch warning (e'tiborsiz qoldirish mumkin):", err.message);
+});
+
+// 36 talik Kozel kolodasi
 const SUITS = ['♠', '♥', '♦', '♣'];
 const VALUES = [
     { rank: '6', points: 0, power: 1 },
@@ -112,13 +116,13 @@ function startNewRound(roomId) {
     const room = rooms[roomId];
     room.status = 'playing';
     room.deck = createDeck();
-    room.trump = room.deck[0]; // Kozir karta
+    room.trump = room.deck[0];
     room.table = [];
     room.turnIndex = 0;
 
     room.players.forEach(p => {
         p.hand = room.deck.splice(-4);
-        p.gamePoints = 0; // Har yangi raundda ochko 0 ga tushadi
+        p.gamePoints = 0;
     });
 
     syncState(roomId);
@@ -148,10 +152,8 @@ function finishTrick(roomId) {
     room.turnIndex = winnerIdx;
     room.table = [];
 
-    // Kartalarni g'olibdan boshlab to'ldirish
     refillCards(room, winnerIdx);
 
-    // Agar kartalar tugagan bo'lsa raundni yakunlash
     if (room.players.every(p => p.hand.length === 0)) {
         evaluateRoundEnd(roomId);
     } else {
@@ -181,7 +183,6 @@ function evaluateRoundEnd(roomId) {
     const room = rooms[roomId];
     const scores = room.players.map(p => p.gamePoints);
 
-    // Durang bo'lmasa shtraf hisoblash
     if (scores[0] !== scores[1]) {
         room.players.forEach(p => {
             if (p.gamePoints <= 20) p.penaltyPoints += 6;
@@ -190,7 +191,6 @@ function evaluateRoundEnd(roomId) {
         });
     }
 
-    // 12 shtraf tekshiruvi
     const loser = room.players.find(p => p.penaltyPoints >= 12);
     if (loser) {
         io.to(roomId).emit('gameOver', { loserName: loser.name });

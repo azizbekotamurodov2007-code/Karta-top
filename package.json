@@ -1,0 +1,14 @@
+{
+  "name": "kozel-online",
+  "version": "1.0.0",
+  "description": "Telegram Mini App Kozel Karta O'yini",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "telegraf": "^4.16.3"
+  }
+}

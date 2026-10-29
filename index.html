@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kozel Arena</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: radial-gradient(circle, #1a472a 0%, #0d2818 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        /* Raqib sohasi */
+        .opponent-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.25);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .user-badge {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .penalty-badge {
+            background: #e63946;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 6px;
+        }
+
+        /* Stol sohasi */
+        .table-area {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .deck-box {
+            position: absolute;
+            left: 16px;
+            display: flex;
+            align-items: center;
+        }
+        .trump-card {
+            width: 50px;
+            height: 75px;
+            background: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            transform: rotate(-90deg);
+            margin-right: -25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .deck-back {
+            width: 50px;
+            height: 75px;
+            background: #2b3a4a;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+        .trick-zone {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Karta dizayni */
+        .card {
+            width: 65px;
+            height: 95px;
+            background: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 6px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            color: #111;
+            position: relative;
+        }
+        .card.red {
+            color: #d90429;
+        }
+        .card.playable {
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        .card.playable:active {
+            transform: translateY(-15px) scale(1.05);
+        }
+
+        /* O'yinchi sohasi */
+        .player-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-bottom: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .player-info {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .hand {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        /* Kirish oynasi */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13, 40, 24, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 100;
+        }
+        .input-box {
+            width: 80%;
+            max-width: 280px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            text-align: center;
+        }
+        .btn-start {
+            width: 80%;
+            max-width: 280px;
+            padding: 12px;
+            background: #2ec4b6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        /* 12 Shtraf qizil ekran (Game Over) */
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(186, 24, 27, 0.96);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+        #game-over h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        #game-over p {
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Kirish paneli -->
+    <div id="login-overlay">
+        <h2 style="margin-bottom: 20px;">🃏 Kozel Online</h2>
+        <input type="text" id="roomIdInput" class="input-box" placeholder="Xona nomi (masalan: 777)">
+        <button class="btn-start" onclick="joinGame()">O‘yinga kirish</button>
+    </div>
+
+    <!-- Raqib ma'lumoti -->
+    <div class="opponent-area">
+        <div id="opp-name" class="user-badge">Raqib kutilmoqda...</div>
+        <div>
+            Ochko: <span id="opp-pts">0</span>
+            <span id="opp-penalty" class="penalty-badge">0/12</span>
+        </div>
+    </div>
+
+    <!-- Stol (Kozir, koloda va tashlangan kartalar) -->
+    <div class="table-area">
+        <div class="deck-box">
+            <div id="trump-el" class="trump-card">♠</div>
+            <div id="deck-count" class="deck-back">28</div>
+        </div>
+        <div id="table-trick" class="trick-zone"></div>
+    </div>
+
+    <!-- O'zimizning sohamiz -->
+    <div class="player-area">
+        <div class="player-info">
+            <div>
+                <span id="my-name">Men</span>
+                <span id="my-penalty" class="penalty-badge">0/12</span>
+            </div>
+            <div>Joriy raund ochkosi: <strong id="my-pts">0</strong></div>
+        </div>
+        <div id="my-hand" class="hand"></div>
+    </div>
+
+    <!-- 12 shtraf bo'lganda chiqadigan ekran -->
+    <div id="game-over">
+        <h1>O‘YIN YAKUNLANDI!</h1>
+        <p id="loser-text"></p>
+        <button class="btn-start" onclick="location.reload()">Bosh menyu</button>
+    </div>
+
+    <script>
+        const socket = io();
+        let myRoom = "";
+        let myTelegramName = "O‘yinchi";
+
+        // Telegram WebApp orqali ismni avtomatik olish
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+            const user = window.Telegram.WebApp.initDataUnsafe?.user;
+            if (user) {
+                myTelegramName = user.first_name || user.username || "O‘yinchi";
+            }
+        }
+
+        function joinGame() {
+            const roomVal = document.getElementById("roomIdInput").value.trim();
+            if (!roomVal) return alert("Xona nomini yozing!");
+            myRoom = roomVal;
+            socket.emit("joinGame", { roomId: myRoom, playerName: myTelegramName });
+            document.getElementById("login-overlay").style.display = "none";
+        }
+
+        function isRed(suit) {
+            return suit === "♥" || suit === "♦";
+        }
+
+        socket.on("state", (data) => {
+            // Kozir va koloda
+            if (data.trump) {
+                const trumpEl = document.getElementById("trump-el");
+                trumpEl.innerText = `${data.trump.suit} ${data.trump.rank}`;
+                trumpEl.className = `trump-card ${isRed(data.trump.suit) ? "red" : ""}`;
+            }
+            document.getElementById("deck-count").innerText = data.deckCount;
+
+            // O'yinchilar
+            const me = data.players.find(p => p.id === socket.id);
+            const opponent = data.players.find(p => p.id !== socket.id);
+
+            if (me) {
+                document.getElementById("my-name").innerText = me.name;
+                document.getElementById("my-pts").innerText = me.gamePoints;
+                document.getElementById("my-penalty").innerText = `${me.penaltyPoints}/12 shtraf`;
+            }
+
+            if (opponent) {
+                document.getElementById("opp-name").innerText = opponent.name;
+                document.getElementById("opp-pts").innerText = opponent.gamePoints;
+                document.getElementById("opp-penalty").innerText = `${opponent.penaltyPoints}/12 shtraf`;
+            }
+
+            // Stoldagi kartalar
+            const tableZone = document.getElementById("table-trick");
+            tableZone.innerHTML = "";
+            data.table.forEach(m => {
+                const cDiv = document.createElement("div");
+                cDiv.className = `card ${isRed(m.card.suit) ? "red" : ""}`;
+                cDiv.innerHTML = `<span>${m.card.rank}</span><span>${m.card.suit}</span>`;
+                tableZone.appendChild(cDiv);
+            });
+
+            // Qo'ldagi kartalar
+            const handDiv = document.getElementById("my-hand");

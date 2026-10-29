@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kozel Arena</title>
-    <!-- Telegram SDK va Rasmiy Socket.io CDN -->
+    <title>Kartani top - Burkozel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
@@ -16,7 +15,7 @@
             padding: 0;
         }
         body {
-            background: radial-gradient(circle, #1a472a 0%, #0d2818 100%);
+            background: radial-gradient(circle, #1a472a 0%, #082012 100%);
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             height: 100vh;
@@ -26,28 +25,37 @@
             overflow: hidden;
         }
 
-        /* Raqib sohasi */
-        .opponent-area {
+        /* Yuqori qism / Raqiblar paneli */
+        .opponents-panel {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.35);
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 10px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .user-badge {
-            font-size: 14px;
-            font-weight: 600;
-        }
-        .penalty-badge {
-            background: #e63946;
-            padding: 2px 8px;
-            border-radius: 12px;
+        .player-card-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 5px 8px;
             font-size: 12px;
-            margin-left: 6px;
+            text-align: center;
+        }
+        .penalty-red {
+            color: #ff4d4f;
+            font-weight: bold;
         }
 
-        /* Stol sohasi */
+        /* Navbat bildirishnomasi */
+        .turn-status {
+            text-align: center;
+            padding: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(0,0,0,0.25);
+            color: #ffb703;
+        }
+
+        /* O'yin stoli */
         .table-area {
             flex-grow: 1;
             position: relative;
@@ -55,102 +63,137 @@
             align-items: center;
             justify-content: center;
         }
-        .deck-box {
+        .deck-zone {
             position: absolute;
-            left: 16px;
+            left: 12px;
             display: flex;
             align-items: center;
         }
         .trump-card {
-            width: 48px;
-            height: 72px;
+            width: 46px;
+            height: 68px;
             background: #fff;
-            border-radius: 6px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #000;
             transform: rotate(-90deg);
             margin-right: -24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
         }
-        .deck-back {
-            width: 48px;
-            height: 72px;
+        .deck-cover {
+            width: 46px;
+            height: 68px;
             background: #1d3557;
             border: 2px solid #fff;
-            border-radius: 6px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
             z-index: 2;
         }
-        .trick-zone {
+
+        /* Stoldagi kartalar guruhi */
+        .tricks-board {
             display: flex;
             gap: 15px;
             align-items: center;
             justify-content: center;
         }
+        .trick-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .trick-name {
+            font-size: 11px;
+            margin-bottom: 3px;
+            color: #b7e4c7;
+        }
+        .trick-cards {
+            display: flex;
+            gap: 4px;
+        }
 
-        /* Karta dizayni */
+        /* Karta ko'rinishi */
         .card {
-            width: 65px;
-            height: 95px;
+            width: 62px;
+            height: 90px;
             background: #ffffff;
-            border-radius: 8px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 6px;
-            font-size: 18px;
+            padding: 5px;
+            font-size: 16px;
             font-weight: bold;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             color: #111;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.15s, border 0.15s;
         }
         .card.red {
             color: #d90429;
         }
-        .card.playable {
-            cursor: pointer;
-            transition: transform 0.15s ease;
-        }
-        .card.playable:active {
-            transform: translateY(-15px) scale(1.05);
+        .card.selected {
+            transform: translateY(-16px);
+            border: 3px solid #ffb703;
         }
 
-        /* O'yinchi sohasi */
-        .player-area {
+        /* Foydalanuvchi maydoni */
+        .player-bottom-area {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-bottom: 15px;
-            background: rgba(0, 0, 0, 0.3);
+            padding-bottom: 12px;
+            background: rgba(0, 0, 0, 0.4);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .player-info {
+        .my-stats {
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 8px 16px;
-            font-size: 14px;
+            padding: 6px 14px;
+            font-size: 13px;
         }
-        .hand {
+        .hand-cards {
             display: flex;
             gap: 8px;
-            margin-top: 6px;
-            min-height: 95px;
+            margin: 6px 0;
+            min-height: 90px;
+        }
+        .controls-row {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-act {
+            background: #2ec4b6;
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-act:disabled {
+            background: #555;
+            opacity: 0.6;
+        }
+        .btn-fold {
+            background: #e76f51;
         }
 
-        /* Kirish oynasi */
-        #login-overlay {
+        /* Modallar (Kirish, Mini-Game, Game Over) */
+        .overlay-box {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(13, 40, 24, 0.98);
+            background: rgba(8, 32, 18, 0.96);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -158,179 +201,279 @@
             padding: 20px;
             z-index: 100;
         }
-        .input-box {
+        .field-input, .select-input {
             width: 80%;
-            max-width: 280px;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-radius: 8px;
+            max-width: 260px;
+            padding: 10px;
+            border-radius: 6px;
             border: none;
-            outline: none;
-            font-size: 16px;
+            margin-bottom: 10px;
+            font-size: 15px;
             text-align: center;
         }
-        .btn-start {
-            width: 80%;
-            max-width: 280px;
-            padding: 12px;
-            background: #2ec4b6;
-            color: #fff;
-            border: none;
+        .suit-grid {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .suit-btn {
+            background: #fff;
+            color: #000;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
             border-radius: 8px;
-            font-size: 16px;
+            border: none;
             font-weight: bold;
             cursor: pointer;
         }
-
-        /* 12 Shtraf ekrani */
-        #game-over {
+        .suit-btn.red {
+            color: #d90429;
+        }
+        #game-over-modal {
             display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(186, 24, 27, 0.96);
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-            text-align: center;
-            padding: 20px;
-        }
-        #game-over h1 {
-            font-size: 30px;
-            margin-bottom: 10px;
-        }
-        #game-over p {
-            font-size: 18px;
-            margin-bottom: 20px;
+            background: #9b2226;
         }
     </style>
 </head>
 <body>
 
-    <!-- Kirish paneli -->
-    <div id="login-overlay">
-        <h2 style="margin-bottom: 20px;">🃏 Kozel Online</h2>
-        <input type="text" id="roomIdInput" class="input-box" placeholder="Xona nomi (masalan: 777)">
-        <button type="button" class="btn-start" id="joinBtn">O‘yinga kirish</button>
+    <!-- 1. Kirish oynasi -->
+    <div id="lobby-modal" class="overlay-box">
+        <h2 style="margin-bottom: 15px;">🃏 Kartani top (Burkozel)</h2>
+        <input type="text" id="roomIdInput" class="field-input" placeholder="Xona raqami (masalan: 777)">
+        <select id="modeSelect" class="select-input" onchange="toggleTeamSelector()">
+            <option value="1v1">1 vs 1 (2 o‘yinchi)</option>
+            <option value="3p">3 kishilik</option>
+            <option value="2v2">2 vs 2 (Jamoaviy)</option>
+        </select>
+        <select id="teamSelect" class="select-input" style="display: none;">
+            <option value="A">A Jamoa</option>
+            <option value="B">B Jamoa</option>
+        </select>
+        <button class="btn-act" style="width: 80%; max-width: 260px; padding: 12px;" onclick="joinLobby()">O‘yinga kirish</button>
     </div>
 
-    <!-- Raqib ma'lumoti -->
-    <div class="opponent-area">
-        <div id="opp-name" class="user-badge">Raqib kutilmoqda...</div>
-        <div>
-            Ochko: <span id="opp-pts">0</span>
-            <span id="opp-penalty" class="penalty-badge">0/12</span>
+    <!-- 2. Boshlang'ich Mini-o'yin (Birinchi yurishni topish) -->
+    <div id="guess-modal" class="overlay-box" style="display: none;">
+        <h3>Birinchi yurishni aniqlash!</h3>
+        <p id="guess-instruction" style="font-size: 14px; margin: 10px 0 15px; text-align: center; color: #b7e4c7;">
+            Yashirin kartaning ramzini toping:
+        </p>
+        <div id="suitChoices" class="suit-grid">
+            <button class="suit-btn" onclick="submitGuess('♠')">♠</button>
+            <button class="suit-btn" onclick="submitGuess('♣')">♣</button>
+            <button class="suit-btn red" onclick="submitGuess('♥')">♥</button>
+            <button class="suit-btn red" onclick="submitGuess('♦')">♦</button>
+        </div>
+        <div id="colorChoices" class="suit-grid" style="display: none;">
+            <button class="btn-act" style="background: #2b2d42;" onclick="submitGuess('BLACK')">Qora</button>
+            <button class="btn-act" style="background: #d90429;" onclick="submitGuess('RED')">Qizil</button>
         </div>
     </div>
 
-    <!-- Stol -->
+    <!-- Raqiblar paneli -->
+    <div class="opponents-panel" id="opponentsList">
+        <div class="player-card-badge">Raqib kutilmoqda...</div>
+    </div>
+
+    <!-- Navbat statusi -->
+    <div class="turn-status" id="turnStatusText">O‘yinchilar yig‘ilmoqda...</div>
+
+    <!-- Stol maydoni -->
     <div class="table-area">
-        <div class="deck-box">
-            <div id="trump-el" class="trump-card">♠</div>
-            <div id="deck-count" class="deck-back">28</div>
+        <div class="deck-zone">
+            <div id="trumpCardEl" class="trump-card">♠</div>
+            <div id="deckCountEl" class="deck-cover">28</div>
         </div>
-        <div id="table-trick" class="trick-zone"></div>
+        <div class="tricks-board" id="trickBoard"></div>
     </div>
 
-    <!-- O'zimizning sohamiz -->
-    <div class="player-area">
-        <div class="player-info">
-            <div>
-                <span id="my-name">Men</span>
-                <span id="my-penalty" class="penalty-badge">0/12</span>
-            </div>
-            <div>Ochko: <strong id="my-pts">0</strong></div>
+    <!-- O'yinchi boshqaruvi -->
+    <div class="player-bottom-area">
+        <div class="my-stats">
+            <div><span id="myNameText">Men</span> | Shtraf: <span id="myPenaltyText" class="penalty-red">0/12</span></div>
+            <div>Joriy raund: <strong id="myPointsText">0</strong>/120</div>
         </div>
-        <div id="my-hand" class="hand"></div>
+        <div class="hand-cards" id="myHandContainer"></div>
+        <div class="controls-row">
+            <button class="btn-act" id="playBtn" onclick="onPlayClick()">Yurish (0)</button>
+            <button class="btn-act btn-fold" id="foldBtn" onclick="onFoldClick()">Yura Olmayman</button>
+        </div>
     </div>
 
-    <!-- Game Over -->
-    <div id="game-over">
-        <h1>O‘YIN TUGADI!</h1>
-        <p id="loser-text"></p>
-        <button class="btn-start" onclick="location.reload()">Qaytadan</button>
+    <!-- 12 Shtraf - Game Over -->
+    <div id="game-over-modal" class="overlay-box">
+        <h1 style="margin-bottom: 12px; font-size: 28px;">O‘YIN YAKUNLANDI!</h1>
+        <p id="loserWording" style="font-size: 16px; margin-bottom: 20px; text-align: center;"></p>
+        <button class="btn-act" onclick="location.reload()">Bosh menyuga qaytish</button>
     </div>
 
     <script>
         const socket = io();
-        let myRoom = "";
+        let currentRoom = "";
+        let selectedCards = [];
+        let isMyTurn = false;
         let myPlayerName = "O‘yinchi " + Math.floor(Math.random() * 900 + 100);
 
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
             const u = window.Telegram.WebApp.initDataUnsafe?.user;
-            if (u && u.first_name) {
-                myPlayerName = u.first_name;
-            }
+            if (u && u.first_name) myPlayerName = u.first_name;
         }
 
-        document.getElementById("joinBtn").addEventListener("click", () => {
-            const inputVal = document.getElementById("roomIdInput").value.trim();
-            if (!inputVal) {
-                alert("Xona nomini kiriting!");
-                return;
-            }
-            myRoom = inputVal;
-            socket.emit("joinGame", { roomId: myRoom, playerName: myPlayerName });
-            document.getElementById("login-overlay").style.display = "none";
-        });
-
-        function isRed(suit) {
-            return suit === "♥" || suit === "♦";
+        function toggleTeamSelector() {
+            const m = document.getElementById("modeSelect").value;
+            document.getElementById("teamSelect").style.display = m === "2v2" ? "block" : "none";
         }
 
-        socket.on("state", (data) => {
-            if (data.trump) {
-                const trumpEl = document.getElementById("trump-el");
-                trumpEl.innerText = `${data.trump.suit} ${data.trump.rank}`;
-                trumpEl.className = `trump-card ${isRed(data.trump.suit) ? "red" : ""}`;
-            }
-            document.getElementById("deck-count").innerText = data.deckCount;
+        function joinLobby() {
+            const rId = document.getElementById("roomIdInput").value.trim();
+            if (!rId) return alert("Xona nomini yozing!");
+            currentRoom = rId;
+            const mode = document.getElementById("modeSelect").value;
+            const team = document.getElementById("teamSelect").value;
+            socket.emit("joinGame", { roomId: currentRoom, playerName: myPlayerName, mode, teamChoice: team });
+            document.getElementById("lobby-modal").style.display = "none";
+        }
 
-            const me = data.players.find(p => p.id === socket.id);
-            const opponent = data.players.find(p => p.id !== socket.id);
+        function submitGuess(val) {
+            socket.emit("makeGuess", { roomId: currentRoom, guess: val });
+            document.getElementById("guess-modal").style.display = "none";
+        }
+
+        function isRed(s) {
+            return s === '♥' || s === '♦';
+        }
+
+        function onPlayClick() {
+            socket.emit("playCards", { roomId: currentRoom, cardIds: selectedCards });
+            selectedCards = [];
+            updateActionButtons();
+        }
+
+        function onFoldClick() {
+            socket.emit("autoFold", { roomId: currentRoom });
+            selectedCards = [];
+            updateActionButtons();
+        }
+
+        function updateActionButtons() {
+            const btn = document.getElementById("playBtn");
+            btn.innerText = selectedCards.length > 0 ? `Yurish (${selectedCards.length})` : "Yurish (Auto)";
+            btn.disabled = !isMyTurn;
+            document.getElementById("foldBtn").disabled = !isMyTurn;
+        }
+
+        socket.on("errorMsg", (msg) => alert(msg));
+
+        socket.on("state", (state) => {
+            isMyTurn = state.isMyTurn;
+
+            // Mini-game oynasini ko'rsatish
+            if (state.status === 'guessing') {
+                document.getElementById("guess-modal").style.display = "flex";
+                if (state.mode === '2v2') {
+                    document.getElementById("colorChoices").style.display = "flex";
+                    document.getElementById("suitChoices").style.display = "none";
+                    document.getElementById("guess-instruction").innerText = "Yashirin kartaning rangini toping:";
+                } else {
+                    document.getElementById("colorChoices").style.display = "none";
+                    document.getElementById("suitChoices").style.display = "flex";
+                    document.getElementById("guess-instruction").innerText = "Yashirin kartaning ramzini toping:";
+                }
+            } else {
+                document.getElementById("guess-modal").style.display = "none";
+            }
+
+            // Kozir va koloda
+            if (state.trump) {
+                const trEl = document.getElementById("trumpCardEl");
+                trEl.innerText = `${state.trump.suit} ${state.trump.rank}`;
+                trEl.className = `trump-card ${isRed(state.trump.suit) ? 'red' : ''}`;
+            }
+            document.getElementById("deckCountEl").innerText = state.deckCount;
+
+            // Navbat holati
+            const tText = document.getElementById("turnStatusText");
+            if (state.status === 'waiting') {
+                tText.innerText = "Boshqa o‘yinchilar kutilmoqda...";
+            } else if (state.isMyTurn) {
+                tText.innerText = state.leadCount > 0 ? `Sizning navbatingiz! (${state.leadCount} ta karta urishingiz kerak)` : "Sizning navbatingiz! Karta(lar) tashlang";
+                tText.style.color = "#52b788";
+            } else {
+                tText.innerText = "Raqib yurishi kutilmoqda...";
+                tText.style.color = "#ffb703";
+            }
+
+            // O'yinchilar
+            const me = state.players.find(p => p.id === socket.id);
+            const opponents = state.players.filter(p => p.id !== socket.id);
 
             if (me) {
-                document.getElementById("my-name").innerText = me.name;
-                document.getElementById("my-pts").innerText = me.gamePoints;
-                document.getElementById("my-penalty").innerText = `${me.penaltyPoints}/12`;
+                document.getElementById("myNameText").innerText = me.team ? `${me.name} (${me.team})` : me.name;
+                document.getElementById("myPenaltyText").innerText = `${me.penaltyPoints}/12`;
+                document.getElementById("myPointsText").innerText = me.gamePoints;
             }
 
-            if (opponent) {
-                document.getElementById("opp-name").innerText = opponent.name;
-                document.getElementById("opp-pts").innerText = opponent.gamePoints;
-                document.getElementById("opp-penalty").innerText = `${opponent.penaltyPoints}/12`;
-            } else {
-                document.getElementById("opp-name").innerText = "Raqib kutilmoqda...";
-            }
-
-            const tableZone = document.getElementById("table-trick");
-            tableZone.innerHTML = "";
-            data.table.forEach(m => {
-                const cDiv = document.createElement("div");
-                cDiv.className = `card ${isRed(m.card.suit) ? "red" : ""}`;
-                cDiv.innerHTML = `<span>${m.card.rank}</span><span>${m.card.suit}</span>`;
-                tableZone.appendChild(cDiv);
+            const oppList = document.getElementById("opponentsList");
+            oppList.innerHTML = "";
+            opponents.forEach(op => {
+                const b = document.createElement("div");
+                b.className = "player-card-badge";
+                b.innerHTML = `<div>${op.team ? `[${op.team}] ` : ''}${op.name}</div>
+                               <div>Kartalar: ${op.cardsCount} | <span class="penalty-red">${op.penaltyPoints}/12</span></div>`;
+                oppList.appendChild(b);
             });
 
-            const handDiv = document.getElementById("my-hand");
-            handDiv.innerHTML = "";
-            data.hand.forEach((card, idx) => {
-                const cDiv = document.createElement("div");
-                cDiv.className = `card playable ${isRed(card.suit) ? "red" : ""}`;
-                cDiv.innerHTML = `<span>${card.rank}</span><span>${card.suit}</span>`;
-                cDiv.onclick = () => {
-                    socket.emit("playCard", { roomId: myRoom, cardIndex: idx });
+            // Stoldagi kartalar
+            const board = document.getElementById("trickBoard");
+            board.innerHTML = "";
+            state.tableTricks.forEach(t => {
+                const item = document.createElement("div");
+                item.className = "trick-item";
+                item.innerHTML = `<span class="trick-name">${t.playerName}</span>`;
+                const row = document.createElement("div");
+                row.className = "trick-cards";
+                t.cards.forEach(c => {
+                    const cd = document.createElement("div");
+                    cd.className = `card ${isRed(c.suit) ? 'red' : ''}`;
+                    cd.innerHTML = `<span>${c.rank}</span><span>${c.suit}</span>`;
+                    row.appendChild(cd);
+                });
+                item.appendChild(row);
+                board.appendChild(item);
+            });
+
+            // Qo'ldagi kartalar
+            const handBox = document.getElementById("myHandContainer");
+            handBox.innerHTML = "";
+            state.myHand.forEach(card => {
+                const isSel = selectedCards.includes(card.id);
+                const cd = document.createElement("div");
+                cd.className = `card ${isRed(card.suit) ? 'red' : ''} ${isSel ? 'selected' : ''}`;
+                cd.innerHTML = `<span>${card.rank}</span><span>${card.suit}</span>`;
+                cd.onclick = () => {
+                    if (!isMyTurn) return;
+                    if (selectedCards.includes(card.id)) {
+                        selectedCards = selectedCards.filter(id => id !== card.id);
+                    } else {
+                        selectedCards.push(card.id);
+                    }
+                    cd.classList.toggle("selected");
+                    updateActionButtons();
                 };
-                handDiv.appendChild(cDiv);
+                handBox.appendChild(cd);
             });
+
+            updateActionButtons();
         });
 
         socket.on("gameOver", ({ loserName }) => {
-            const overDiv = document.getElementById("game-over");
-            document.getElementById("loser-text").innerText = `${loserName} 12 shtraf oldi!`;
-            overDiv.style.display = "flex";
+            const m = document.getElementById("game-over-modal");
+            document.getElementById("loserWording").innerText = `${loserName} 12 shtraf to‘plab mag‘lub bo‘ldi!`;
+            m.style.display = "flex";
         });
     </script>
 </body>

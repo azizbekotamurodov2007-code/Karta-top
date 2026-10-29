@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kozel Arena</title>
-    <!-- Telegram WebApp SDK -->
+    <!-- Telegram SDK va Rasmiy Socket.io CDN -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -31,8 +31,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 16px;
-            background: rgba(0, 0, 0, 0.25);
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.35);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .user-badge {
@@ -62,8 +62,8 @@
             align-items: center;
         }
         .trump-card {
-            width: 50px;
-            height: 75px;
+            width: 48px;
+            height: 72px;
             background: #fff;
             border-radius: 6px;
             display: flex;
@@ -73,13 +73,13 @@
             font-weight: bold;
             color: #000;
             transform: rotate(-90deg);
-            margin-right: -25px;
+            margin-right: -24px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .deck-back {
-            width: 50px;
-            height: 75px;
-            background: #2b3a4a;
+            width: 48px;
+            height: 72px;
+            background: #1d3557;
             border: 2px solid #fff;
             border-radius: 6px;
             display: flex;
@@ -111,7 +111,6 @@
             font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             color: #111;
-            position: relative;
         }
         .card.red {
             color: #d90429;
@@ -130,7 +129,7 @@
             flex-direction: column;
             align-items: center;
             padding-bottom: 15px;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.3);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         .player-info {
@@ -144,6 +143,7 @@
             display: flex;
             gap: 8px;
             margin-top: 6px;
+            min-height: 95px;
         }
 
         /* Kirish oynasi */
@@ -179,9 +179,10 @@
             border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
         }
 
-        /* 12 Shtraf qizil ekran (Game Over) */
+        /* 12 Shtraf ekrani */
         #game-over {
             display: none;
             position: fixed;
@@ -195,12 +196,12 @@
             padding: 20px;
         }
         #game-over h1 {
-            font-size: 32px;
+            font-size: 30px;
             margin-bottom: 10px;
         }
         #game-over p {
             font-size: 18px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -210,7 +211,7 @@
     <div id="login-overlay">
         <h2 style="margin-bottom: 20px;">🃏 Kozel Online</h2>
         <input type="text" id="roomIdInput" class="input-box" placeholder="Xona nomi (masalan: 777)">
-        <button class="btn-start" onclick="joinGame()">O‘yinga kirish</button>
+        <button type="button" class="btn-start" id="joinBtn">O‘yinga kirish</button>
     </div>
 
     <!-- Raqib ma'lumoti -->
@@ -222,7 +223,7 @@
         </div>
     </div>
 
-    <!-- Stol (Kozir, koloda va tashlangan kartalar) -->
+    <!-- Stol -->
     <div class="table-area">
         <div class="deck-box">
             <div id="trump-el" class="trump-card">♠</div>
@@ -238,47 +239,48 @@
                 <span id="my-name">Men</span>
                 <span id="my-penalty" class="penalty-badge">0/12</span>
             </div>
-            <div>Joriy raund ochkosi: <strong id="my-pts">0</strong></div>
+            <div>Ochko: <strong id="my-pts">0</strong></div>
         </div>
         <div id="my-hand" class="hand"></div>
     </div>
 
-    <!-- 12 shtraf bo'lganda chiqadigan ekran -->
+    <!-- Game Over -->
     <div id="game-over">
-        <h1>O‘YIN YAKUNLANDI!</h1>
+        <h1>O‘YIN TUGADI!</h1>
         <p id="loser-text"></p>
-        <button class="btn-start" onclick="location.reload()">Bosh menyu</button>
+        <button class="btn-start" onclick="location.reload()">Qaytadan</button>
     </div>
 
     <script>
         const socket = io();
         let myRoom = "";
-        let myTelegramName = "O‘yinchi";
+        let myPlayerName = "O‘yinchi " + Math.floor(Math.random() * 900 + 100);
 
-        // Telegram WebApp orqali ismni avtomatik olish
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             window.Telegram.WebApp.expand();
-            const user = window.Telegram.WebApp.initDataUnsafe?.user;
-            if (user) {
-                myTelegramName = user.first_name || user.username || "O‘yinchi";
+            const u = window.Telegram.WebApp.initDataUnsafe?.user;
+            if (u && u.first_name) {
+                myPlayerName = u.first_name;
             }
         }
 
-        function joinGame() {
-            const roomVal = document.getElementById("roomIdInput").value.trim();
-            if (!roomVal) return alert("Xona nomini yozing!");
-            myRoom = roomVal;
-            socket.emit("joinGame", { roomId: myRoom, playerName: myTelegramName });
+        document.getElementById("joinBtn").addEventListener("click", () => {
+            const inputVal = document.getElementById("roomIdInput").value.trim();
+            if (!inputVal) {
+                alert("Xona nomini kiriting!");
+                return;
+            }
+            myRoom = inputVal;
+            socket.emit("joinGame", { roomId: myRoom, playerName: myPlayerName });
             document.getElementById("login-overlay").style.display = "none";
-        }
+        });
 
         function isRed(suit) {
             return suit === "♥" || suit === "♦";
         }
 
         socket.on("state", (data) => {
-            // Kozir va koloda
             if (data.trump) {
                 const trumpEl = document.getElementById("trump-el");
                 trumpEl.innerText = `${data.trump.suit} ${data.trump.rank}`;
@@ -286,23 +288,23 @@
             }
             document.getElementById("deck-count").innerText = data.deckCount;
 
-            // O'yinchilar
             const me = data.players.find(p => p.id === socket.id);
             const opponent = data.players.find(p => p.id !== socket.id);
 
             if (me) {
                 document.getElementById("my-name").innerText = me.name;
                 document.getElementById("my-pts").innerText = me.gamePoints;
-                document.getElementById("my-penalty").innerText = `${me.penaltyPoints}/12 shtraf`;
+                document.getElementById("my-penalty").innerText = `${me.penaltyPoints}/12`;
             }
 
             if (opponent) {
                 document.getElementById("opp-name").innerText = opponent.name;
                 document.getElementById("opp-pts").innerText = opponent.gamePoints;
-                document.getElementById("opp-penalty").innerText = `${opponent.penaltyPoints}/12 shtraf`;
+                document.getElementById("opp-penalty").innerText = `${opponent.penaltyPoints}/12`;
+            } else {
+                document.getElementById("opp-name").innerText = "Raqib kutilmoqda...";
             }
 
-            // Stoldagi kartalar
             const tableZone = document.getElementById("table-trick");
             tableZone.innerHTML = "";
             data.table.forEach(m => {
@@ -312,5 +314,24 @@
                 tableZone.appendChild(cDiv);
             });
 
-            // Qo'ldagi kartalar
             const handDiv = document.getElementById("my-hand");
+            handDiv.innerHTML = "";
+            data.hand.forEach((card, idx) => {
+                const cDiv = document.createElement("div");
+                cDiv.className = `card playable ${isRed(card.suit) ? "red" : ""}`;
+                cDiv.innerHTML = `<span>${card.rank}</span><span>${card.suit}</span>`;
+                cDiv.onclick = () => {
+                    socket.emit("playCard", { roomId: myRoom, cardIndex: idx });
+                };
+                handDiv.appendChild(cDiv);
+            });
+        });
+
+        socket.on("gameOver", ({ loserName }) => {
+            const overDiv = document.getElementById("game-over");
+            document.getElementById("loser-text").innerText = `${loserName} 12 shtraf oldi!`;
+            overDiv.style.display = "flex";
+        });
+    </script>
+</body>
+</html>
